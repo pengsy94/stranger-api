@@ -1,0 +1,18 @@
+[package]
+name = "app"
+edition.workspace = true
+publish.workspace = true
+version.workspace = true
+
+[dependencies]
+common = { path = "../common" }
+kernel = { path = "../kernel" }
+middleware-fn = { path = "../middleware-fn" }
+
+axum = { workspace = true, features = ["multipart", "ws"] }
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+serde_json = { workspace = true }
+futures-util = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }

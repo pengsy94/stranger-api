@@ -1,0 +1,49 @@
+### GET 初始请求，返回html
+# @no-log
+# @no-redirect
+GET http://127.0.0.1:3000/api/test
+
+### POST 请求为json的时候,参数处理
+# @no-log
+# @no-redirect
+POST http://127.0.0.1:3000/api/test/post-json
+content-type: application/json;charset=UTF-8
+
+{
+  "number": 190011
+}
+
+### POST 请求为form的时候,参数处理
+# @no-log
+# @no-redirect
+POST http://127.0.0.1:3000/api/test/post-form
+content-type: application/x-www-form-urlencoded;charset=UTF-8
+
+number=19099
+
+### GET 链接数据库操作
+# @no-log
+# @no-redirect
+GET http://127.0.0.1:3000/api/test/db
+
+### WS 长连接测试 客户端 1
+# @no-log
+# @no-redirect
+WEBSOCKET ws://127.0.0.1:3000/api/ws
+
+
+### WS 长连接测试 客户端 2
+# @no-log
+# @no-redirect
+WEBSOCKET ws://127.0.0.1:3000/api/ws
+
+### POST 登录请求
+# @no-log
+# @no-redirect
+POST http://127.0.0.1:3000/api/login
+content-type: application/json;charset=UTF-8
+
+{
+  "email": "11@qq.com",
+  "password": "1111111"
+}
