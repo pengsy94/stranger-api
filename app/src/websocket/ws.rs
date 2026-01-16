@@ -1,31 +1,36 @@
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::websocket::models::{ClientMessage, ConnectionManager, ServerMessage};
 use axum::{
     extract::{
-        State, WebSocketUpgrade,
+        Query, State, WebSocketUpgrade,
         ws::{Message, Utf8Bytes, WebSocket},
     },
     response::IntoResponse,
 };
+use common::request::websocket::WsRequestParams;
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::mpsc;
-use uuid::Uuid;
-use crate::websocket::models::{ClientMessage, ConnectionManager, ServerMessage};
 
 /// WebSocket 升级处理
 pub async fn websocket_handler(
+    Query(args): Query<WsRequestParams>,
     ws: WebSocketUpgrade,
     State(state): State<Arc<ConnectionManager>>,
 ) -> impl IntoResponse {
-    tracing::info!("新的 WebSocket 连接请求");
-    ws.on_upgrade(|socket| handle_websocket_connection(socket, state))
+    tracing::info!("新的 WebSocket 连接请求, userKey = {:?}", args);
+    ws.on_upgrade(|socket| handle_websocket_connection(socket, state, args))
 }
 
 /// 处理 WebSocket 连接
-async fn handle_websocket_connection(socket: WebSocket, state: Arc<ConnectionManager>) {
-    // 生成客户端ID
-    let client_id = Uuid::new_v4().to_string();
+async fn handle_websocket_connection(
+    socket: WebSocket,
+    state: Arc<ConnectionManager>,
+    args: WsRequestParams,
+) {
+    // 使用浏览器发送过来的userKey作为客户端ID
+    let client_id = args.key;
 
     tracing::info!("处理客户端 {} 的 WebSocket 连接", client_id);
 
@@ -88,7 +93,7 @@ async fn handle_send_task(
         client_id: client_id.to_string(),
         online_count: state.online_count().await,
     })
-        .map_err(|e| format!("序列化失败: {}", e))?;
+    .map_err(|e| format!("序列化失败: {}", e))?;
 
     sender
         .send(Message::Text(Utf8Bytes::from(connected_msg)))
@@ -192,7 +197,7 @@ async fn handle_parsed_message(
                 message,
                 timestamp,
             })
-                .map_err(|e| format!("序列化失败: {}", e))?;
+            .map_err(|e| format!("序列化失败: {}", e))?;
 
             state.send_to(&to, private_msg).await
         }
@@ -209,8 +214,10 @@ async fn handle_parsed_message(
 
         ClientMessage::Ping => {
             // 发送 Pong 响应
-            let pong_msg = serde_json::to_string(&ServerMessage::Pong)
+            let online_count = state.online_count().await;
+            let pong_msg = serde_json::to_string(&ServerMessage::Pong { online_count })
                 .map_err(|e| format!("序列化失败: {}", e))?;
+            println!("pong {}", pong_msg);
             state.send_to(client_id, pong_msg).await
         }
 
@@ -227,7 +234,7 @@ async fn handle_parsed_message(
                 message: message.clone(),
                 timestamp,
             })
-                .map_err(|e| format!("序列化失败: {}", e))?;
+            .map_err(|e| format!("序列化失败: {}", e))?;
 
             let _ = state.send_to(client_id, self_msg).await;
 
