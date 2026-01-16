@@ -59,7 +59,7 @@ pub enum ServerMessage {
     Error { message: String },
     /// 心跳响应
     #[serde(rename = "pong")]
-    Pong,
+    Pong { online_count: usize },
     /// 广播消息
     #[serde(rename = "broadcast")]
     Broadcast {
