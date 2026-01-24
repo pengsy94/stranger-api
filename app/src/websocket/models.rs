@@ -10,6 +10,14 @@ use tokio::sync::{RwLock, mpsc};
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ClientMessage {
+    /// 匹配命令
+    #[serde(rename = "meet")]
+    Meet {
+        user_key: String,
+        age_index: u32,
+        sex_index: u32,
+        location: String,
+    },
     /// 私聊消息
     #[serde(rename = "private")]
     Private { to: String, message: String },
@@ -40,6 +48,10 @@ pub enum ServerMessage {
     Connected {
         client_id: String,
         online_count: usize,
+    },
+    #[serde(rename = "meet")]
+    Meet {
+        user_key: String,
     },
     /// 私聊消息
     #[serde(rename = "private")]
@@ -147,7 +159,7 @@ impl ConnectionManager {
                 message: message.to_string(),
                 timestamp,
             })
-                .unwrap_or_else(|_| "{\"type\":\"error\",\"message\":\"消息序列化失败\"}".to_string());
+            .unwrap_or_else(|_| "{\"type\":\"error\",\"message\":\"消息序列化失败\"}".to_string());
 
             let _ = connection.sender.send(broadcast_msg);
         }

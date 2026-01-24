@@ -1,5 +1,7 @@
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::websocket::models::{ClientMessage, ConnectionManager, ServerMessage};
 use axum::{
@@ -11,7 +13,9 @@ use axum::{
 };
 use common::request::websocket::WsRequestParams;
 use futures_util::{SinkExt, StreamExt};
+use kernel::redis::service::RedisService;
 use tokio::sync::mpsc;
+use tracing::error;
 
 /// WebSocket 升级处理
 pub async fn websocket_handler(
@@ -175,6 +179,47 @@ async fn handle_parsed_message(
     client_id: &str,
 ) -> Result<(), String> {
     match msg {
+        ClientMessage::Meet {
+            user_key,
+            age_index,
+            sex_index,
+            location,
+        } => {
+            let list: Vec<String> = RedisService::get_list("MEET_LIST")
+                .await
+                .unwrap_or_else(|e| {
+                    error!("MEET_LIST Error: {}", e);
+                    let v: Vec<String> = Vec::new();
+                    v
+                });
+
+            let meet = serde_json::to_string(&ClientMessage::Meet {
+                user_key,
+                age_index,
+                sex_index,
+                location,
+            })
+            .map_err(|e| format!("序列化失败: {}", e))?;
+
+            // 加入数据到redis队列中
+            if let Err(_) = RedisService::lpush_single("MEET_LIST", &meet).await {
+                return Err("加入遇见匹配失败！".to_string());
+            };
+
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+
+            let private_msg = serde_json::to_string(&ServerMessage::Private {
+                from: client_id.to_string(),
+                message: "匹配中...".to_string(),
+                timestamp,
+            })
+            .map_err(|e| format!("序列化失败: {}", e))?;
+
+            state.send_to(&client_id, private_msg).await
+        }
         ClientMessage::Private { to, message } => {
             // 检查目标用户是否存在
             if !state.is_online(&to).await {

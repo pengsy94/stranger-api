@@ -14,7 +14,7 @@ impl DatabaseConfig {
     /// 从环境变量创建数据库配置
     pub fn from_env() -> Result<Self, ConfigError> {
         let database_url = env::var("DATABASE_URL")
-            .unwrap_or_else(|_| "mysql://root:root@localhost:3306/database".to_string())
+            .unwrap_or_else(|_| "".to_string())
             .parse::<String>()
             .map_err(|_| ConfigError::MissingEnvVar("DATABASE_URL".to_string()))?;
 

@@ -1,22 +1,25 @@
 mod database_config;
 pub mod error;
+mod redis_config;
 mod server_config;
 
+use crate::config::{
+    database_config::DatabaseConfig, redis_config::RedisConfig, server_config::ServerConfig,
+};
 use dotenvy::dotenv;
+use error::ConfigError;
 use std::sync::OnceLock;
 
-use crate::config::{database_config::DatabaseConfig, server_config::ServerConfig};
-use error::ConfigError;
+/// 全局配置单例
+static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
 /// 应用配置
 #[derive(Debug, Clone)]
 pub struct AppConfig {
     pub database: DatabaseConfig,
     pub server: ServerConfig,
+    pub redis: RedisConfig,
 }
-
-// 全局配置单例
-static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
 impl AppConfig {
     /// 初始化配置（应用启动时调用一次）
@@ -43,10 +46,11 @@ impl AppConfig {
         Ok(Self {
             server: ServerConfig::from_env()?,
             database: DatabaseConfig::from_env()?,
+            redis: RedisConfig::from_env()?,
         })
     }
 
-    /// 获取全局配置（初始化后使用）
+    /// 获取全局配置(初始化后使用)
     pub fn global() -> &'static AppConfig {
         CONFIG
             .get()
@@ -67,4 +71,9 @@ pub fn server_config() -> &'static ServerConfig {
 /// 便捷函数：获取数据库配置
 pub fn database_config() -> &'static DatabaseConfig {
     &AppConfig::global().database
+}
+
+/// 便捷函数：获取redis配置
+pub fn redis_config() -> &'static RedisConfig {
+    &AppConfig::global().redis
 }

@@ -28,6 +28,8 @@ impl DatabaseManager {
         DB_POOL
             .set(Arc::new(connection))
             .map_err(|_| sea_orm::DbErr::Custom("DB already initialized".to_string()))?;
+
+        println!("✅ Database connection pool initialized successfully!");
         Ok(())
     }
 

@@ -1,29 +1,56 @@
 use app::route;
-use axum::Router;
-use axum::http::Method;
-use database::DatabaseManager;
-use kernel::config::AppConfig;
-use kernel::config::server_config;
-use kernel::tasks::manager::SchedulerManager;
+use axum::{Router, http::Method};
+use kernel::{
+    config::{AppConfig, database_config, redis_config, server_config},
+    tasks::manager::SchedulerManager,
+};
+use std::process;
 use tokio::net::TcpListener;
-use tower_http::compression::CompressionLayer;
-use tower_http::compression::DefaultPredicate;
-use tower_http::compression::Predicate;
-use tower_http::compression::predicate::NotForContentType;
-use tower_http::cors::Any;
-use tower_http::cors::CorsLayer;
+use tower_http::{
+    compression::{CompressionLayer, DefaultPredicate, Predicate, predicate::NotForContentType},
+    cors::{Any, CorsLayer},
+};
 
 pub mod logger;
 
 pub async fn make() -> anyhow::Result<(Router, TcpListener, SchedulerManager)> {
     // 初始化配置（只调用一次）
-    AppConfig::init()?;
+    if let Err(e) = AppConfig::init() {
+        eprintln!("❌ Failed to initialize app config: {}", e);
+        process::exit(1);
+    };
+
     // 构建应用
     let (make_service, listener) = build_application().await?;
-    // 初始化数据库信息
-    DatabaseManager::init().await?;
+
     // 打印系统信息
     kernel::system::show();
+
+    let config = database_config();
+    if !config.database_url.is_empty() {
+        use database::DatabaseManager;
+        // 初始化数据库信息
+        if let Err(e) = DatabaseManager::init().await {
+            eprintln!("❌ Failed to initialize Database: {}", e);
+            eprintln!(
+                "💡 Make sure Database is running at: {}",
+                config.database_url
+            );
+            process::exit(1);
+        };
+    }
+
+    let config = redis_config();
+    if !config.redis_url.is_empty() {
+        use kernel::redis::init_redis;
+        // 初始化 Redis 连接池
+        if let Err(e) = init_redis(&config.redis_url).await {
+            eprintln!("❌ Failed to initialize Redis: {}", e);
+            eprintln!("💡 Make sure Redis is running at: {}", config.redis_url);
+            process::exit(1);
+        }
+    }
+
     // 创建调度器管理器
     let scheduler_manager = SchedulerManager::new();
     // 启动定时任务
