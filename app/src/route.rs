@@ -6,20 +6,21 @@ use axum::{
     Router, middleware,
     routing::{get, post},
 };
-use kernel::config::server_config;
+use kernel::config::{server_config, websocket_config};
 use middleware_fn::request::{logging_middleware, rate_limiter};
 
 pub fn build_router() -> Router {
     let config = server_config();
+    let ws_config = websocket_config();
 
     let mut router = Router::new();
 
     // ws服务
-    if config.ws_open {
+    if ws_config.ws_open {
         use crate::websocket::{models::ConnectionManager, set_websocket_api};
         // 创建连接管理器
         let connection_manager = Arc::new(ConnectionManager::new());
-        router = router.nest(&config.ws_path, set_websocket_api(connection_manager));
+        router = router.nest(&ws_config.ws_path, set_websocket_api(connection_manager));
     }
 
     if config.debug {

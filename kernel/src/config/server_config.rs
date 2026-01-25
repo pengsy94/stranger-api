@@ -11,9 +11,6 @@ pub struct ServerConfig {
     pub content_gzip: bool,
     /// 是否开启定时任务
     pub cron: bool,
-    /// 是否开启ws
-    pub ws_open: bool,
-    pub ws_path: String,
     /// `log_level` 日志输出等级 TRACE DEBUG INFO  WARN ERROR
     pub log_level: String,
     /// `dir` 日志输出文件夹
@@ -56,17 +53,7 @@ impl ServerConfig {
             .unwrap_or_else(|_| "false".to_string())
             .parse::<bool>()
             .map_err(|e| ConfigError::InvalidValue("SERVER_CRON".to_string(), e.to_string()))?;
-
-        let ws_open = env::var("SERVER_WS_OPEN")
-            .unwrap_or_else(|_| "false".to_string())
-            .parse::<bool>()
-            .map_err(|_| ConfigError::MissingEnvVar("SERVER_WS_OPEN".to_string()))?;
-
-        let ws_path = env::var("SERVER_WS_PATH")
-            .unwrap_or_else(|_| "/ws".to_string())
-            .parse::<String>()
-            .map_err(|_| ConfigError::MissingEnvVar("SERVER_WS_PATH".to_string()))?;
-
+        
         let log_dir = env::var("LOG_DIR")
             .unwrap_or_else(|_| "logs".to_string())
             .parse::<String>()
@@ -88,8 +75,6 @@ impl ServerConfig {
             port,
             content_gzip,
             cron,
-            ws_open,
-            ws_path,
             log_level,
             log_dir,
             log_file,

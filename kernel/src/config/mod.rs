@@ -2,9 +2,11 @@ mod database_config;
 pub mod error;
 mod redis_config;
 mod server_config;
+mod websocket_config;
 
 use crate::config::{
     database_config::DatabaseConfig, redis_config::RedisConfig, server_config::ServerConfig,
+    websocket_config::WebSocketConfig,
 };
 use dotenvy::dotenv;
 use error::ConfigError;
@@ -19,6 +21,7 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub server: ServerConfig,
     pub redis: RedisConfig,
+    pub websocket: WebSocketConfig,
 }
 
 impl AppConfig {
@@ -47,6 +50,7 @@ impl AppConfig {
             server: ServerConfig::from_env()?,
             database: DatabaseConfig::from_env()?,
             redis: RedisConfig::from_env()?,
+            websocket: WebSocketConfig::from_env()?,
         })
     }
 
@@ -76,4 +80,9 @@ pub fn database_config() -> &'static DatabaseConfig {
 /// 便捷函数：获取redis配置
 pub fn redis_config() -> &'static RedisConfig {
     &AppConfig::global().redis
+}
+
+/// 便捷函数：获取websocket配置
+pub fn websocket_config() -> &'static WebSocketConfig {
+    &AppConfig::global().websocket
 }

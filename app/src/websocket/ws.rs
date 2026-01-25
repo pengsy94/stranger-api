@@ -185,7 +185,7 @@ async fn handle_parsed_message(
             sex_index,
             location,
         } => {
-            let list: Vec<String> = RedisService::get_list("MEET_LIST")
+            let _list: Vec<String> = RedisService::get_list("MEET_LIST")
                 .await
                 .unwrap_or_else(|e| {
                     error!("MEET_LIST Error: {}", e);
