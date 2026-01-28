@@ -1,8 +1,8 @@
-use crate::redis::model::{RedisPool, RedisServiceError};
-use std::sync::OnceLock;
-
-pub mod model;
 pub mod service;
+pub mod types;
+
+use crate::redis_pool::types::{RedisPool, RedisServiceError};
+use std::sync::OnceLock;
 
 // 转换为 anyhow::Result 的便捷方法
 pub type RedisResult<T> = Result<T, RedisServiceError>;

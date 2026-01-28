@@ -13,9 +13,7 @@ use axum::{
 };
 use common::request::websocket::WsRequestParams;
 use futures_util::{SinkExt, StreamExt};
-use kernel::redis::service::RedisService;
 use tokio::sync::mpsc;
-use tracing::error;
 
 /// WebSocket 升级处理
 pub async fn websocket_handler(
@@ -185,26 +183,10 @@ async fn handle_parsed_message(
             sex_index,
             location,
         } => {
-            let _list: Vec<String> = RedisService::get_list("MEET_LIST")
-                .await
-                .unwrap_or_else(|e| {
-                    error!("MEET_LIST Error: {}", e);
-                    let v: Vec<String> = Vec::new();
-                    v
-                });
-
-            let meet = serde_json::to_string(&ClientMessage::Meet {
-                user_key,
-                age_index,
-                sex_index,
-                location,
-            })
-            .map_err(|e| format!("序列化失败: {}", e))?;
-
-            // 加入数据到redis队列中
-            if let Err(_) = RedisService::lpush_single("MEET_LIST", &meet).await {
-                return Err("加入遇见匹配失败！".to_string());
-            };
+            println!("user_key = {}", user_key);
+            println!("age_index = {}", age_index);
+            println!("sex_index = {}", sex_index);
+            println!("location = {}", location);
 
             let timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)

@@ -42,11 +42,21 @@ pub async fn make() -> anyhow::Result<(Router, TcpListener, SchedulerManager)> {
 
     let config = redis_config();
     if !config.redis_url.is_empty() {
-        use kernel::redis::init_redis;
+        use kernel::redis_pool::init_redis;
+        use kernel::redis_pool::service::RedisService;
         // 初始化 Redis 连接池
         if let Err(e) = init_redis(&config.redis_url).await {
             eprintln!("❌ Failed to initialize Redis: {}", e);
             eprintln!("💡 Make sure Redis is running at: {}", config.redis_url);
+            process::exit(1);
+        }
+
+        // 初始化Redis Stream和消费组
+        if let Err(e) = RedisService::init_redis_stream().await {
+            eprintln!(
+                "❌ Failed to initialize the Stream and the consumption group: {}",
+                e
+            );
             process::exit(1);
         }
     }

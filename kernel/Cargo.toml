@@ -5,6 +5,7 @@ publish.workspace = true
 version.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 tokio = { workspace = true, features = ["full", "signal", "rt-multi-thread", "macros", "parking_lot", "signal"] }
@@ -13,5 +14,6 @@ tracing = { workspace = true }
 num_cpus = { workspace = true }
 dotenvy = { workspace = true }
 thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-redis = { workspace = true, features = ["tokio-comp"] }
+redis = { workspace = true, features = ["tokio-comp", "streams", "cluster"] }
