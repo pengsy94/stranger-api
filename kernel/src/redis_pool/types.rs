@@ -1,5 +1,6 @@
 use crate::redis_pool::RedisResult;
 use crate::redis_pool::service::RedisService;
+use anyhow::Result;
 use redis::aio::MultiplexedConnection;
 use redis::{Client, RedisError};
 use serde::{Deserialize, Serialize};
@@ -110,10 +111,10 @@ where
     }
 
     /// 开始消费消息
-    pub async fn start_consuming<F, Fut>(&self, processor: F) -> anyhow::Result<()>
+    pub async fn start_consuming<F, Fut>(&self, processor: F) -> Result<()>
     where
         F: Fn(Vec<(String, T)>) -> Fut + Send + Sync + 'static,
-        Fut: std::future::Future<Output = anyhow::Result<Vec<String>>> + Send,
+        Fut: Future<Output = Result<Vec<String>>> + Send,
     {
         tracing::info!(
             "消费者 {} 开始消费Stream: {}",
@@ -162,7 +163,10 @@ where
                 }
                 Err(e) => {
                     let err_str = e.to_string();
-                    if err_str.contains("timeout") || err_str.contains("TIMEOUT") {
+                    if err_str.contains("timeout")
+                        || err_str.contains("TIMEOUT")
+                        || err_str.contains("timed out")
+                    {
                         // 读取超时是正常的，继续循环
                         continue;
                     }

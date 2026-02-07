@@ -1,6 +1,7 @@
 use crate::api;
 use std::sync::Arc;
 
+use crate::websocket::models::ConnectionManager;
 use axum::http::StatusCode;
 use axum::{
     Router, middleware,
@@ -9,7 +10,7 @@ use axum::{
 use kernel::config::{server_config, websocket_config};
 use middleware_fn::request::{logging_middleware, rate_limiter};
 
-pub fn build_router() -> Router {
+pub fn build_router(connection_manager: Arc<ConnectionManager>) -> Router {
     let config = server_config();
     let ws_config = websocket_config();
 
@@ -17,9 +18,7 @@ pub fn build_router() -> Router {
 
     // ws服务
     if ws_config.ws_open {
-        use crate::websocket::{models::ConnectionManager, set_websocket_api};
-        // 创建连接管理器
-        let connection_manager = Arc::new(ConnectionManager::new());
+        use crate::websocket::set_websocket_api;
         router = router.nest(&ws_config.ws_path, set_websocket_api(connection_manager));
     }
 

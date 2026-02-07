@@ -1,9 +1,10 @@
+use anyhow::Result;
 use bootstrap::logger;
 
 mod bootstrap;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
     // 服务应用初始化
     let (make_service, listener, scheduler_manager) = bootstrap::make().await?;
 

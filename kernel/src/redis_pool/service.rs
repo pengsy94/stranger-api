@@ -39,14 +39,20 @@ impl RedisService {
             .await
         {
             Ok(_) => {
-                tracing::info!("创建消费组 {}:{} 成功", stream_key, CONSUMER_GROUP);
+                println!(
+                    "✅ Created Redis consumption group {}:{} successfully!",
+                    stream_key, CONSUMER_GROUP
+                );
                 Ok(())
             }
             Err(e) => {
                 // 如果消费组已存在，会返回 BUSYGROUP 错误，这是正常的
                 let err_msg = e.to_string();
                 if err_msg.contains("BUSYGROUP") {
-                    tracing::info!("消费组 {}:{} 已存在", stream_key, CONSUMER_GROUP);
+                    println!(
+                        "✅ The Redis consumption group {}:{} already exists!",
+                        stream_key, CONSUMER_GROUP
+                    );
                     Ok(())
                 } else {
                     // 其他错误需要处理
