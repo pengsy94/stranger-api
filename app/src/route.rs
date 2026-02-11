@@ -1,7 +1,7 @@
 use crate::api;
 use std::sync::Arc;
 
-use crate::websocket::models::ConnectionManager;
+use crate::websocket::types::ConnectionManager;
 use axum::http::StatusCode;
 use axum::{
     Router, middleware,

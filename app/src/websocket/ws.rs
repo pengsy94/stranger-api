@@ -3,7 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::websocket::models::{ClientMessage, ConnectionManager, ServerMessage};
+use crate::websocket::types::{ClientMessage, ConnectionManager, ServerMessage};
 use axum::{
     extract::{
         Query, State, WebSocketUpgrade,

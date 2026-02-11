@@ -1,9 +1,9 @@
-use crate::websocket::models::ConnectionManager;
+use crate::websocket::types::ConnectionManager;
 use axum::Router;
 use axum::routing::get;
 use std::sync::Arc;
 
-pub mod models;
+pub mod types;
 pub mod ws;
 
 /// websocket app 路由

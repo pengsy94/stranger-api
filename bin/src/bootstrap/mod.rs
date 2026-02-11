@@ -1,6 +1,6 @@
 use anyhow::Result;
 use app::route;
-use app::websocket::models::ConnectionManager;
+use app::websocket::types::ConnectionManager;
 use axum::{Router, http::Method};
 use kernel::redis_pool::types::{MATCH_STREAM_KEY, MatchRequest, TypedStreamConsumer};
 use kernel::{
