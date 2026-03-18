@@ -4,6 +4,8 @@
 
 Stranger API 是一个使用 Rust 语言开发的轻量级、高性能 WebSocket 聊天服务，专为陌生人随机匹配聊天场景设计。利用 Rust 语言的内存安全特性和高性能优势，实现了低内存占用、高并发支持的聊天服务。
 
+web页面：[https://github.com/pengsy94/stranger](https://github.com/pengsy94/stranger)
+
 ## 核心功能
 
 ### 1. WebSocket 实时通信
