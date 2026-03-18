@@ -230,10 +230,7 @@ async fn handle_parsed_message(
 
             state.send_to(&to, depart_msg).await
         }
-        ClientMessage::Private {
-            to,
-            message,
-        } => {
+        ClientMessage::Private { to, message } => {
             // 检查目标用户是否存在
             if !state.is_online(&to).await {
                 return Err(format!("用户 {} 不在线", to));
