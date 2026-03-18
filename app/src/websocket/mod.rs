@@ -1,14 +1,14 @@
-use crate::websocket::models::ConnectionManager;
+use crate::websocket::types::ConnectionManager;
 use axum::Router;
 use axum::routing::get;
 use std::sync::Arc;
 
-pub mod models;
-pub mod ws;
+pub mod types;
+pub mod handler;
 
 /// websocket app 路由
 pub fn set_websocket_api(connection_manager: Arc<ConnectionManager>) -> Router {
     Router::new()
-        .route("/", get(ws::websocket_handler))
+        .route("/", get(handler::websocket_handler))
         .with_state(connection_manager)
 }

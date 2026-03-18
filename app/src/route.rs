@@ -16,7 +16,7 @@ pub fn build_router() -> Router {
 
     // ws服务
     if config.ws_open {
-        use crate::websocket::{models::ConnectionManager, set_websocket_api};
+        use crate::websocket::{types::ConnectionManager, set_websocket_api};
         // 创建连接管理器
         let connection_manager = Arc::new(ConnectionManager::new());
         router = router.nest(&config.ws_path, set_websocket_api(connection_manager));

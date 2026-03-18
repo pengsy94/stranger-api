@@ -3,7 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::websocket::models::{ClientMessage, ConnectionManager, ServerMessage};
+use crate::websocket::types::{ClientMessage, ConnectionManager, ServerMessage};
 use axum::{
     extract::{
         Query, State, WebSocketUpgrade,
@@ -13,9 +13,7 @@ use axum::{
 };
 use common::request::websocket::WsRequestParams;
 use futures_util::{SinkExt, StreamExt};
-use kernel::redis::service::RedisService;
 use tokio::sync::mpsc;
-use tracing::error;
 
 /// WebSocket 升级处理
 pub async fn websocket_handler(
@@ -80,6 +78,9 @@ async fn handle_websocket_connection(
         _ = send_task => tracing::info!("客户端 {} 发送任务结束", client_id),
         _ = recv_task => tracing::info!("客户端 {} 接收任务结束", client_id),
     }
+
+    // 从匹配队列中移除用户
+    state.remove_from_waiting_queue(&client_id).await;
 
     // 确保连接被清理
     state.unregister(&client_id).await;
@@ -185,42 +186,54 @@ async fn handle_parsed_message(
             sex_index,
             location,
         } => {
-            let list: Vec<String> = RedisService::get_list("MEET_LIST")
-                .await
-                .unwrap_or_else(|e| {
-                    error!("MEET_LIST Error: {}", e);
-                    let v: Vec<String> = Vec::new();
-                    v
-                });
+            // 将用户添加到匹配队列
+            state
+                .add_to_waiting_queue(
+                    client_id.to_string(),
+                    user_key.clone(),
+                    age_index,
+                    sex_index,
+                    location,
+                )
+                .await;
 
-            let meet = serde_json::to_string(&ClientMessage::Meet {
-                user_key,
-                age_index,
-                sex_index,
-                location,
-            })
-            .map_err(|e| format!("序列化失败: {}", e))?;
+            // 尝试匹配用户
+            if let Some((user1, user2)) = state.match_users().await {
+                // 匹配成功，通知双方用户
+                if let Err(e) = state.notify_match_result(&user1, &user2).await {
+                    tracing::error!("发送匹配结果失败: {}", e);
+                    return Err("发送匹配结果失败".to_string());
+                }
+                Ok(())
+            } else {
+                // 没有匹配成功，发送匹配中消息
+                let private_msg = serde_json::to_string(&ServerMessage::MeetLoading {
+                    message: "匹配中...".to_string(),
+                })
+                .map_err(|e| format!("序列化失败: {}", e))?;
 
-            // 加入数据到redis队列中
-            if let Err(_) = RedisService::lpush_single("MEET_LIST", &meet).await {
-                return Err("加入遇见匹配失败！".to_string());
-            };
-
-            let timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
-
-            let private_msg = serde_json::to_string(&ServerMessage::Private {
-                from: client_id.to_string(),
-                message: "匹配中...".to_string(),
-                timestamp,
-            })
-            .map_err(|e| format!("序列化失败: {}", e))?;
-
-            state.send_to(&client_id, private_msg).await
+                state.send_to(&client_id, private_msg).await
+            }
         }
-        ClientMessage::Private { to, message } => {
+        // 离开某个1对1聊天
+        ClientMessage::Depart { to } => {
+            // 检查是否是自己
+            if to == client_id {
+                return Err("不能自己离开聊天".to_string());
+            }
+
+            // 发送离开消息
+            let depart_msg = serde_json::to_string(&ServerMessage::Depart {
+                from: client_id.to_string(),
+            })
+            .map_err(|e| format!("序列化失败: {}", e))?;
+
+            state.send_to(&to, depart_msg).await
+        }
+        ClientMessage::Private {
+            to,
+            message,
+        } => {
             // 检查目标用户是否存在
             if !state.is_online(&to).await {
                 return Err(format!("用户 {} 不在线", to));
